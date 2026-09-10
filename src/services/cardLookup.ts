@@ -14,13 +14,16 @@ const store = localforage.createInstance({
 const CARD_MAP_KEY = "card-map";
 const META_KEY = "cache-meta";
 const TTL_MS = 7 * 24 * 60 * 60 * 1000; // 1 week
+// Bump when the cached card shape changes so old caches repopulate before TTL.
+const SCHEMA_VERSION = 2;
 
 type CardMap = Record<string, ScryfallCard>;
-type CacheMeta = { downloadedAt: number };
+type CacheMeta = { downloadedAt: number; schemaVersion?: number };
 
 async function isStale(): Promise<boolean> {
   const meta = await store.getItem<CacheMeta>(META_KEY);
-  return !meta || Date.now() - meta.downloadedAt > TTL_MS;
+  if (!meta || meta.schemaVersion !== SCHEMA_VERSION) return true;
+  return Date.now() - meta.downloadedAt > TTL_MS;
 }
 
 async function populate(onProgress: (status: string) => void): Promise<void> {
@@ -53,6 +56,7 @@ async function populate(onProgress: (status: string) => void): Promise<void> {
     cardMap[card.name.toLowerCase()] = {
       name: card.name,
       mana_cost: card.mana_cost,
+      oracle_text: card.oracle_text ?? "",
       cmc: card.cmc,
       type_line: card.type_line,
       colors: card.colors,
@@ -62,7 +66,10 @@ async function populate(onProgress: (status: string) => void): Promise<void> {
   }
 
   await store.setItem(CARD_MAP_KEY, cardMap);
-  await store.setItem(META_KEY, { downloadedAt: Date.now() } as CacheMeta);
+  await store.setItem(META_KEY, {
+    downloadedAt: Date.now(),
+    schemaVersion: SCHEMA_VERSION,
+  } as CacheMeta);
 }
 
 export type LookupResult = {

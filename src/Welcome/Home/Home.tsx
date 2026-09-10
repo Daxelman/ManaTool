@@ -1,12 +1,21 @@
 import { useState } from "react";
 import "./Home.css";
 import { lookupCards } from "../../services/cardLookup";
+import { getRampAndDrawNames } from "../../services/tagLookup";
 import type { ScryfallCard } from "../../types/scryfall";
 import { ManaBreakdown, optimizeMana } from "../../services/optimizer";
 
 type CardEntry = {
   quantity: number;
   name: string;
+};
+
+const BASIC_LAND_NAMES: Record<string, string> = {
+  W: "Plains",
+  U: "Island",
+  B: "Swamp",
+  R: "Mountain",
+  G: "Forest",
 };
 
 type ValidationResult = {
@@ -61,7 +70,13 @@ const Home = () => {
         found: foundCards,
         notFound: notFound.map((name) => ({ quantity: 0, name })),
       });
-      setManaBreakdown(optimizeMana(foundCards));
+
+      // Tag data sharpens the ramp/draw count; if Scryfall is unreachable the
+      // optimizer falls back to its oracle-text heuristic.
+      const rampAndDrawNames = await getRampAndDrawNames(setLoadingStatus).catch(
+        () => undefined,
+      );
+      setManaBreakdown(optimizeMana(foundCards, rampAndDrawNames));
     } catch (error) {
       console.log(error);
       setError(
@@ -110,11 +125,37 @@ const Home = () => {
           </h3>
           <h3>
             Average Mana Value:{" "}
-            <b>{manaBreakdown.convertedManaCost.toFixed(2)}</b>
+            <b>{manaBreakdown.averageManaValue.toFixed(2)}</b>
+          </h3>
+          <h3>
+            Cheap Ramp / Draw Spells:{" "}
+            <b>{manaBreakdown.rampAndDrawCount}</b>
+          </h3>
+
+          <h2>Recommended Mana Base</h2>
+          <h3>
+            Total Lands: <b>{manaBreakdown.recommendedLandCount}</b>{" "}
+            ({manaBreakdown.recommendedBasicCount} basics,{" "}
+            {manaBreakdown.recommendedNonBasicCount} non-basics)
           </h3>
 
           <h2>So I think You Need (at least) these Basics:</h2>
-          <h5>(when I figure this out I'll let you know)</h5>
+          {Object.keys(manaBreakdown.basicsNeeded).length > 0 ? (
+            <ul>
+              {(
+                Object.entries(manaBreakdown.basicsNeeded) as [
+                  string,
+                  number,
+                ][]
+              ).map(([color, count]) => (
+                <li key={color}>
+                  {BASIC_LAND_NAMES[color] ?? color}: <b>{count}</b>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <h5>(no colored mana requirements found)</h5>
+          )}
 
           {result.notFound.length > 0 && (
             <>
