@@ -1,9 +1,9 @@
 import { useState } from "react";
-import "./Home.css";
 import { lookupCards } from "../../services/cardLookup";
 import { getRampAndDrawNames } from "../../services/tagLookup";
 import type { ScryfallCard } from "../../types/scryfall";
 import { ManaBreakdown, optimizeMana } from "../../services/optimizer";
+import { Button } from "../../components/ui/button";
 
 type CardEntry = {
   quantity: number;
@@ -89,7 +89,7 @@ const Home = () => {
   };
 
   return (
-    <div>
+    <div className="mx-auto max-w-2xl p-4">
       <div>
         <h1>Optimize Your Mana</h1>
         <p>
@@ -104,12 +104,12 @@ const Home = () => {
           placeholder={"4 Lightning Bolt\n2 Counterspell\n1 Sol Ring"}
           rows={12}
         />
-        <button type="button" onClick={handleSubmit} disabled={loading}>
+        <Button type="button" onClick={handleSubmit} disabled={loading}>
           {loading ? loadingStatus || "Checking cards..." : "Give Me Good Mana"}
-        </button>
+        </Button>
       </div>
 
-      {error && <p className="error">{error}</p>}
+      {error && <p className="text-sm text-red-600">{error}</p>}
 
       {result && manaBreakdown && (
         <div>
@@ -160,7 +160,7 @@ const Home = () => {
           {result.notFound.length > 0 && (
             <>
               <h2>Card(s) Not Recognized ({result.notFound.length})</h2>
-              <ul className="not-found-list">
+              <ul className="text-red-600">
                 {result.notFound.map((card) => (
                   <li key={card.name}>{card.name}</li>
                 ))}

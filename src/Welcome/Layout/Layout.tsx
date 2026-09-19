@@ -1,4 +1,5 @@
 import { Link, Outlet } from "react-router-dom";
+import { Button } from "../../components/ui/button";
 
 const Layout = () => {
   return (
@@ -8,7 +9,9 @@ const Layout = () => {
       <nav>
         <ul>
           <li>
-            <Link to="/">Home</Link>
+            <Button asChild variant="link">
+              <Link to="/">Home</Link>
+            </Button>
           </li>
         </ul>
       </nav>

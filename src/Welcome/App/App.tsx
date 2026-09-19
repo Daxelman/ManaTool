@@ -1,6 +1,6 @@
 import { Routes, Route, Link } from "react-router-dom";
 import Layout from "../Layout/Layout";
-import About from "../../Components/About/About";
+import About from "../../components/About/About";
 import Home from "../Home/Home";
 
 const App = () => {
