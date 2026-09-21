@@ -2,11 +2,12 @@ import { Routes, Route, Link } from "react-router-dom";
 import Layout from "../Layout/Layout";
 import About from "../../Components/About/About";
 import Home from "../Home/Home";
+import Header from "../../Components/Header";
 
 const App = () => {
   return (
     <div>
-      <h1>Mana Optimizer!</h1>
+      <Header />
 
       {/* Routes nest inside one another. Nested route paths build upon
             parent route paths, and nested route elements render inside

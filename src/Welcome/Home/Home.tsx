@@ -4,6 +4,8 @@ import { lookupCards } from "../../services/cardLookup";
 import { getRampAndDrawNames } from "../../services/tagLookup";
 import type { ScryfallCard } from "../../types/scryfall";
 import { ManaBreakdown, optimizeMana } from "../../services/optimizer";
+import DeckListInput from "../../Components/DeckListInput";
+import ManaBreakdownSection from "../../Components/ManaBreakdownSection";
 
 type CardEntry = {
   quantity: number;
@@ -37,7 +39,6 @@ function parseList(raw: string): CardEntry[] {
 }
 
 const Home = () => {
-  const [inputList, setInputList] = useState("");
   const [result, setResult] = useState<ValidationResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadingStatus, setLoadingStatus] = useState("");
@@ -46,10 +47,10 @@ const Home = () => {
     null,
   );
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (deckList: string) => {
     setError(null);
     setResult(null);
-    const parsed = parseList(inputList);
+    const parsed = parseList(deckList);
     if (parsed.length === 0) {
       setError("No valid card entries found. Use the format: 4 Lightning Bolt");
       return;
@@ -73,9 +74,9 @@ const Home = () => {
 
       // Tag data sharpens the ramp/draw count; if Scryfall is unreachable the
       // optimizer falls back to its oracle-text heuristic.
-      const rampAndDrawNames = await getRampAndDrawNames(setLoadingStatus).catch(
-        () => undefined,
-      );
+      const rampAndDrawNames = await getRampAndDrawNames(
+        setLoadingStatus,
+      ).catch(() => undefined);
       setManaBreakdown(optimizeMana(foundCards, rampAndDrawNames));
     } catch (error) {
       console.log(error);
@@ -91,84 +92,40 @@ const Home = () => {
   return (
     <div>
       <div>
-        <h1>Optimize Your Mana</h1>
         <p>
           Paste you deck below, hit the button, and we'll try and give you an
           optimized mana base.
         </p>
+        {error && <p className="error">{error}</p>}
       </div>
-      <div>
-        <textarea
-          value={inputList}
-          onChange={(e) => setInputList(e.target.value)}
-          placeholder={"4 Lightning Bolt\n2 Counterspell\n1 Sol Ring"}
-          rows={12}
-        />
-        <button type="button" onClick={handleSubmit} disabled={loading}>
-          {loading ? loadingStatus || "Checking cards..." : "Give Me Good Mana"}
-        </button>
-      </div>
-
-      {error && <p className="error">{error}</p>}
-
-      {result && manaBreakdown && (
-        <div>
-          <h2>Mana Breakdown:</h2>
-          <h3>
-            Deck Color Identity: <b>{manaBreakdown.colorIdentity}</b>
-          </h3>
-          <h3>
-            Current Land Count: <b>{manaBreakdown.landCount}</b>
-          </h3>
-          <h3>
-            Current Non Land Count: <b>{manaBreakdown.nonLandCount}</b>
-          </h3>
-          <h3>
-            Average Mana Value:{" "}
-            <b>{manaBreakdown.averageManaValue.toFixed(2)}</b>
-          </h3>
-          <h3>
-            Cheap Ramp / Draw Spells:{" "}
-            <b>{manaBreakdown.rampAndDrawCount}</b>
-          </h3>
-
-          <h2>Recommended Mana Base</h2>
-          <h3>
-            Total Lands: <b>{manaBreakdown.recommendedLandCount}</b>{" "}
-            ({manaBreakdown.recommendedBasicCount} basics,{" "}
-            {manaBreakdown.recommendedNonBasicCount} non-basics)
-          </h3>
-
-          <h2>So I think You Need (at least) these Basics:</h2>
-          {Object.keys(manaBreakdown.basicsNeeded).length > 0 ? (
-            <ul>
-              {(
-                Object.entries(manaBreakdown.basicsNeeded) as [
-                  string,
-                  number,
-                ][]
-              ).map(([color, count]) => (
-                <li key={color}>
-                  {BASIC_LAND_NAMES[color] ?? color}: <b>{count}</b>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <h5>(no colored mana requirements found)</h5>
-          )}
-
-          {result.notFound.length > 0 && (
-            <>
-              <h2>Card(s) Not Recognized ({result.notFound.length})</h2>
-              <ul className="not-found-list">
-                {result.notFound.map((card) => (
-                  <li key={card.name}>{card.name}</li>
-                ))}
-              </ul>
-            </>
+      <div className="flex flex-col md:flex-row gap-8">
+        <div className="md:w-1/2">
+          <div>
+            <DeckListInput
+              onSubmit={handleSubmit}
+              loading={loading}
+              loadingStatus={loadingStatus}
+            />
+          </div>
+        </div>
+        <div className="md:w-1/2">
+          {result && manaBreakdown && (
+            <div>
+              <ManaBreakdownSection manaBreakdown={manaBreakdown} />
+              {result.notFound.length > 0 && (
+                <>
+                  <h2>Card(s) Not Recognized ({result.notFound.length})</h2>
+                  <ul className="not-found-list">
+                    {result.notFound.map((card) => (
+                      <li key={card.name}>{card.name}</li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </div>
           )}
         </div>
-      )}
+      </div>
     </div>
   );
 };

@@ -23,10 +23,13 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
+    "start": "concurrently -k -n tailwind,react \"npm:tailwind:watch\" \"npm:react-start\"",
+    "react-start": "react-scripts start",
+    "build": "npm run tailwind:build && react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
+    "tailwind:watch": "tailwindcss -i ./src/tailwind.css -o ./src/index.css --watch",
+    "tailwind:build": "tailwindcss -i ./src/tailwind.css -o ./src/index.css --minify",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d build"
   },
@@ -49,6 +52,9 @@
     ]
   },
   "devDependencies": {
-    "gh-pages": "^5.0.0"
+    "@tailwindcss/cli": "^4.3.3",
+    "concurrently": "^10.0.5",
+    "gh-pages": "^5.0.0",
+    "tailwindcss": "^4.3.3"
   }
 }
