@@ -12,14 +12,6 @@ type CardEntry = {
   name: string;
 };
 
-const BASIC_LAND_NAMES: Record<string, string> = {
-  W: "Plains",
-  U: "Island",
-  B: "Swamp",
-  R: "Mountain",
-  G: "Forest",
-};
-
 type ValidationResult = {
   found: (CardEntry & { data: ScryfallCard })[];
   notFound: CardEntry[];
@@ -98,7 +90,7 @@ const Home = () => {
         </p>
         {error && <p className="error">{error}</p>}
       </div>
-      <div className="flex flex-col md:flex-row gap-8">
+      <div className="flex flex-col gap-8 md:flex-row">
         <div className="md:w-1/2">
           <div>
             <DeckListInput

@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@plugin "flyonui";
 
 body {
   margin: 0;
@@ -17,6 +18,4 @@ h1 {
   text-align: center;
   text-size-adjust: inherit;
   font-size: larger;
-}
-textarea {
 }

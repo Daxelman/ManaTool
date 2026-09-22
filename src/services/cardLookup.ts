@@ -2,10 +2,6 @@ import localforage from "localforage";
 import { ungzip } from "pako";
 import type { ScryfallCard } from "../types/scryfall";
 
-// Claude says I can migrate to backend API by replacing the body of `lookupCards`
-// with a fetch() call to your own endpoint, and deleting everything else here.
-// TODO: the above, in the future
-
 const store = localforage.createInstance({
   name: "mana-optimizer",
   storeName: "cards",
