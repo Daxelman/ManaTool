@@ -5,13 +5,13 @@ const Layout = () => {
     <div>
       {/* A "layout route" is a good place to put markup you want to
           share across all the pages on your site, like navigation. */}
-      <nav>
+      {/* <nav>
         <ul>
           <li>
             <Link to="/">Home</Link>
           </li>
         </ul>
-      </nav>
+      </nav> */}
 
       <hr />
 
