@@ -1,7 +1,6 @@
 import { Routes, Route, Link } from "react-router-dom";
 import Layout from "../Layout/Layout";
 import Home from "../Home/Home";
-import Header from "../../Components/Header";
 
 const App = () => {
   return (
