@@ -14,7 +14,7 @@ const BASIC_LAND_NAMES: Record<string, string> = {
 const ManaBreakdownSection = ({ manaBreakdown }: ManaBreakdownProps) => {
   return (
     <div>
-      <h2>Mana Breakdown:</h2>
+      <h2>Breakdown:</h2>
       <h3>
         Deck Color Identity: <b>{manaBreakdown.colorIdentity}</b>
       </h3>

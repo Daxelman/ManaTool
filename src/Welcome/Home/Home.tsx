@@ -1,5 +1,4 @@
 import { useState } from "react";
-import "./Home.css";
 import { lookupCards } from "../../services/cardLookup";
 import { getRampAndDrawNames } from "../../services/tagLookup";
 import type { ScryfallCard } from "../../types/scryfall";
@@ -83,40 +82,42 @@ const Home = () => {
 
   return (
     <div>
-      <div>
-        <p>
-          Paste you deck below, hit the button, and we'll try and give you an
-          optimized mana base.
-        </p>
-        {error && <p className="error">{error}</p>}
+      <div className="flex justify-center">
+        <img
+          className="w-200"
+          src={`${process.env.PUBLIC_URL}/ManaToolLogo.png`}
+          alt="ManaTool Logo, with the tag line 'Tune Your Mana Base'"
+        />
       </div>
-      <div className="flex flex-col gap-8 md:flex-row">
-        <div className="md:w-1/2">
-          <div>
-            <DeckListInput
-              onSubmit={handleSubmit}
-              loading={loading}
-              loadingStatus={loadingStatus}
-            />
+      <div>{error && <p className="error">{error}</p>}</div>
+      <div
+        className={`flex flex-col items-center gap-8 ${
+          !result ? "min-h-[40vh] justify-center" : ""
+        }`}
+      >
+        <div className="w-full max-w-xl">
+          <DeckListInput
+            onSubmit={handleSubmit}
+            loading={loading}
+            loadingStatus={loadingStatus}
+          />
+        </div>
+
+        {result && manaBreakdown && (
+          <div className="w-full max-w-2xl text-center">
+            <ManaBreakdownSection manaBreakdown={manaBreakdown} />
+            {result.notFound.length > 0 && (
+              <>
+                <h2>Card(s) Not Recognized ({result.notFound.length})</h2>
+                <ul className="not-found-list">
+                  {result.notFound.map((card) => (
+                    <li key={card.name}>{card.name}</li>
+                  ))}
+                </ul>
+              </>
+            )}
           </div>
-        </div>
-        <div className="md:w-1/2">
-          {result && manaBreakdown && (
-            <div>
-              <ManaBreakdownSection manaBreakdown={manaBreakdown} />
-              {result.notFound.length > 0 && (
-                <>
-                  <h2>Card(s) Not Recognized ({result.notFound.length})</h2>
-                  <ul className="not-found-list">
-                    {result.notFound.map((card) => (
-                      <li key={card.name}>{card.name}</li>
-                    ))}
-                  </ul>
-                </>
-              )}
-            </div>
-          )}
-        </div>
+        )}
       </div>
     </div>
   );
