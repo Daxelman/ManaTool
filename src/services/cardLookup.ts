@@ -17,6 +17,11 @@ const SCHEMA_VERSION = 2;
 type CardMap = Record<string, ScryfallCard>;
 type CacheMeta = { downloadedAt: number; schemaVersion?: number };
 
+// Deserializing the whole card map out of IndexedDB costs ~200ms, so keep it
+// for the rest of the page's life. Staleness is still checked against the
+// IndexedDB metadata on every lookup, so a week-old map is still replaced.
+let memoryCardMap: CardMap | null = null;
+
 async function isStale(): Promise<boolean> {
   const meta = await store.getItem<CacheMeta>(META_KEY);
   if (!meta || meta.schemaVersion !== SCHEMA_VERSION) return true;
@@ -38,7 +43,9 @@ function indexLine(map: CardMap, line: string): void {
   };
 }
 
-async function populate(onProgress: (status: string) => void): Promise<void> {
+async function populate(
+  onProgress: (status: string) => void,
+): Promise<CardMap> {
   onProgress("Fetching card database info...");
   const { jsonl_download_uri } = await timed("cards: bulk-data metadata", async () => {
     const metaRes = await fetch(
@@ -100,6 +107,9 @@ async function populate(onProgress: (status: string) => void): Promise<void> {
       schemaVersion: SCHEMA_VERSION,
     } as CacheMeta);
   });
+
+  memoryCardMap = cardMap;
+  return cardMap;
 }
 
 export type LookupResult = {
@@ -112,14 +122,21 @@ export async function lookupCards(
   onProgress: (status: string) => void,
 ): Promise<LookupResult> {
   return timed("cards: lookupCards total", async () => {
+    let cardMap: CardMap;
     if (await timed("cards: staleness check", isStale)) {
-      await timed("cards: populate total", () => populate(onProgress));
+      cardMap = await timed("cards: populate total", () =>
+        populate(onProgress),
+      );
+    } else if (memoryCardMap) {
+      cardMap = memoryCardMap;
+    } else {
+      cardMap = await timed(
+        "cards: IndexedDB read",
+        async () => (await store.getItem<CardMap>(CARD_MAP_KEY)) ?? {},
+      );
+      memoryCardMap = cardMap;
     }
 
-    const cardMap = await timed(
-      "cards: IndexedDB read",
-      async () => (await store.getItem<CardMap>(CARD_MAP_KEY)) ?? {},
-    );
     const found: LookupResult["found"] = [];
     const notFound: string[] = [];
 
