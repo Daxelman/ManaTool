@@ -23,6 +23,21 @@ async function isStale(): Promise<boolean> {
   return Date.now() - meta.downloadedAt > TTL_MS;
 }
 
+function indexLine(map: CardMap, line: string): void {
+  if (!line) return;
+  const card: ScryfallCard = JSON.parse(line);
+  map[card.name.toLowerCase()] = {
+    name: card.name,
+    mana_cost: card.mana_cost,
+    oracle_text: card.oracle_text ?? "",
+    cmc: card.cmc,
+    type_line: card.type_line,
+    colors: card.colors,
+    color_identity: card.color_identity,
+    legalities: card.legalities,
+  };
+}
+
 async function populate(onProgress: (status: string) => void): Promise<void> {
   onProgress("Fetching card database info...");
   const { jsonl_download_uri } = await timed("cards: bulk-data metadata", async () => {
@@ -41,35 +56,42 @@ async function populate(onProgress: (status: string) => void): Promise<void> {
   // not a single JSON array, and Scryfall doesn't set Content-Encoding, so
   // fetch() won't auto-decompress it — we have to gunzip it ourselves.
   onProgress("Downloading card database (one-time setup, ~70MB)...");
-  const compressed = await timed("cards: download", async () => {
-    const dataRes = await fetch(jsonl_download_uri);
-    return new Uint8Array(await dataRes.arrayBuffer());
-  });
+  const dataRes = await fetch(jsonl_download_uri);
+  const cardMap: CardMap = {};
 
-  onProgress("Decompressing card database...");
-  const jsonl = await timed("cards: gunzip", () =>
-    ungzip(compressed, { toText: true }),
-  );
-
-  onProgress("Indexing cards...");
-  const cardMap = await timed("cards: parse + index", () => {
-    const map: CardMap = {};
-    for (const line of jsonl.split("\n")) {
-      if (!line) continue;
-      const card: ScryfallCard = JSON.parse(line);
-      map[card.name.toLowerCase()] = {
-        name: card.name,
-        mana_cost: card.mana_cost,
-        oracle_text: card.oracle_text ?? "",
-        cmc: card.cmc,
-        type_line: card.type_line,
-        colors: card.colors,
-        color_identity: card.color_identity,
-        legalities: card.legalities,
-      };
-    }
-    return map;
-  });
+  if (dataRes.body && typeof DecompressionStream !== "undefined") {
+    // Native streaming path: download, gunzip and parse overlap, and we never
+    // hold the whole compressed + decompressed file in memory at once.
+    await timed("cards: stream download + gunzip + parse", async () => {
+      const reader = dataRes
+        .body!.pipeThrough(new DecompressionStream("gzip"))
+        .pipeThrough(new TextDecoderStream())
+        .getReader();
+      let tail = "";
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const lines = (tail + value).split("\n");
+        tail = lines.pop() ?? "";
+        for (const line of lines) indexLine(cardMap, line);
+      }
+      indexLine(cardMap, tail);
+    });
+  } else {
+    // Fallback for browsers without DecompressionStream.
+    const compressed = await timed(
+      "cards: download",
+      async () => new Uint8Array(await dataRes.arrayBuffer()),
+    );
+    onProgress("Decompressing card database...");
+    const jsonl = await timed("cards: gunzip", () =>
+      ungzip(compressed, { toText: true }),
+    );
+    onProgress("Indexing cards...");
+    await timed("cards: parse + index", () => {
+      for (const line of jsonl.split("\n")) indexLine(cardMap, line);
+    });
+  }
 
   await timed("cards: IndexedDB write", async () => {
     await store.setItem(CARD_MAP_KEY, cardMap);
