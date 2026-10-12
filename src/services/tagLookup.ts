@@ -1,4 +1,5 @@
 import localforage from "localforage";
+import { timed } from "./perf";
 
 // Scryfall "oracle tags" (aka function tags) come from the community Tagger
 // project (tagger.scryfall.com). They are queryable only through the search
@@ -68,20 +69,28 @@ async function fetchTaggedNames(query: string): Promise<string[]> {
 export async function getRampAndDrawNames(
   onProgress?: (status: string) => void,
 ): Promise<Set<string>> {
-  const cached = await store.getItem<TagCache>(CACHE_KEY);
-  const fresh = cached && Date.now() - cached.fetchedAt < TTL_MS;
-  if (fresh) return new Set(cached.names);
+  return timed("tags: getRampAndDrawNames total", async () => {
+    const cached = await timed("tags: IndexedDB read", () =>
+      store.getItem<TagCache>(CACHE_KEY),
+    );
+    const fresh = cached && Date.now() - cached.fetchedAt < TTL_MS;
+    if (fresh) return new Set(cached.names);
 
-  onProgress?.("Fetching ramp / card-draw tags from Scryfall...");
-  try {
-    const names = await fetchTaggedNames(RAMP_AND_DRAW_QUERY);
-    await store.setItem(CACHE_KEY, {
-      fetchedAt: Date.now(),
-      names,
-    } as TagCache);
-    return new Set(names);
-  } catch (err) {
-    if (cached) return new Set(cached.names); // stale is better than nothing
-    throw err;
-  }
+    onProgress?.("Fetching ramp / card-draw tags from Scryfall...");
+    try {
+      const names = await timed("tags: fetch from Scryfall", () =>
+        fetchTaggedNames(RAMP_AND_DRAW_QUERY),
+      );
+      await timed("tags: IndexedDB write", () =>
+        store.setItem(CACHE_KEY, {
+          fetchedAt: Date.now(),
+          names,
+        } as TagCache),
+      );
+      return new Set(names);
+    } catch (err) {
+      if (cached) return new Set(cached.names); // stale is better than nothing
+      throw err;
+    }
+  });
 }

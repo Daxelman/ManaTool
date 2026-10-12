@@ -48,6 +48,12 @@ const Home = () => {
     }
     setLoading(true);
     try {
+      // Tag data sharpens the ramp/draw count; if Scryfall is unreachable the
+      // optimizer falls back to its oracle-text heuristic. Started now so it
+      // runs alongside the card lookup instead of after it.
+      const rampAndDrawPromise = getRampAndDrawNames(setLoadingStatus).catch(
+        () => undefined,
+      );
       const { found, notFound } = await lookupCards(
         parsed.map((c) => c.name),
         setLoadingStatus,
@@ -63,11 +69,7 @@ const Home = () => {
         notFound: notFound.map((name) => ({ quantity: 0, name })),
       });
 
-      // Tag data sharpens the ramp/draw count; if Scryfall is unreachable the
-      // optimizer falls back to its oracle-text heuristic.
-      const rampAndDrawNames = await getRampAndDrawNames(
-        setLoadingStatus,
-      ).catch(() => undefined);
+      const rampAndDrawNames = await rampAndDrawPromise;
       setManaBreakdown(optimizeMana(foundCards, rampAndDrawNames));
     } catch (error) {
       console.log(error);
