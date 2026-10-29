@@ -1,4 +1,5 @@
 import { ManaBreakdown } from "../services/optimizer";
+import StatCard from "./StatCard";
 
 type ManaBreakdownProps = {
   manaBreakdown: ManaBreakdown;
@@ -13,23 +14,25 @@ const BASIC_LAND_NAMES: Record<string, string> = {
 };
 const ManaBreakdownSection = ({ manaBreakdown }: ManaBreakdownProps) => {
   return (
-    <div>
-      <h1>Breakdown:</h1>
-      <h3>
-        Deck Color Identity:<b> {manaBreakdown.colorIdentity}</b>
-      </h3>
-      <h3>
-        Current Land Count: <b>{manaBreakdown.landCount}</b>
-      </h3>
-      <h3>
-        Current Non Land Count: <b>{manaBreakdown.nonLandCount}</b>
-      </h3>
-      <h3>
-        Average Mana Value: <b>{manaBreakdown.averageManaValue.toFixed(2)}</b>
-      </h3>
-      <h3>
-        Cheap Ramp / Draw Spells: <b>{manaBreakdown.rampAndDrawCount}</b>
-      </h3>
+    <div className="flex max-h-312.75 max-w-360 flex-col items-center justify-center gap-10">
+      <h1>Deck Breakdown:</h1>
+      <div>
+        {/* <h3>
+          Deck Color Identity:<b> {manaBreakdown.colorIdentity}</b>
+        </h3> */}
+        <div className="flex flex-wrap items-start gap-5">
+          <StatCard label="LAND COUNT" value={manaBreakdown.landCount} />
+          <StatCard label="NON-LAND COUNT" value={manaBreakdown.nonLandCount} />
+          <StatCard
+            label="AVG MANA VALUE"
+            value={manaBreakdown.averageManaValue.toFixed(2)}
+          />
+          <StatCard
+            label="CHEAP RAMP / DRAW"
+            value={manaBreakdown.rampAndDrawCount}
+          />
+        </div>
+      </div>
 
       <h1>Recommended Mana Base:</h1>
       <h3>
