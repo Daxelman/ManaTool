@@ -14,9 +14,9 @@ const BASIC_LAND_NAMES: Record<string, string> = {
 const ManaBreakdownSection = ({ manaBreakdown }: ManaBreakdownProps) => {
   return (
     <div>
-      <h2>Breakdown:</h2>
+      <h1>Breakdown:</h1>
       <h3>
-        Deck Color Identity: <b>{manaBreakdown.colorIdentity}</b>
+        Deck Color Identity:<b> {manaBreakdown.colorIdentity}</b>
       </h3>
       <h3>
         Current Land Count: <b>{manaBreakdown.landCount}</b>
@@ -31,14 +31,16 @@ const ManaBreakdownSection = ({ manaBreakdown }: ManaBreakdownProps) => {
         Cheap Ramp / Draw Spells: <b>{manaBreakdown.rampAndDrawCount}</b>
       </h3>
 
-      <h2>Recommended Mana Base</h2>
+      <h1>Recommended Mana Base:</h1>
       <h3>
         Total Lands: <b>{manaBreakdown.recommendedLandCount}</b> (
         {manaBreakdown.recommendedBasicCount} basics,{" "}
-        {manaBreakdown.recommendedNonBasicCount} non-basics)
+        {manaBreakdown.recommendedLandCount -
+          manaBreakdown.recommendedBasicCount}{" "}
+        non-basics)
       </h3>
 
-      <h2>So I think You Need (at least) these Basics:</h2>
+      <h1>So I think You Need (at least) these Basics:</h1>
       {Object.keys(manaBreakdown.basicsNeeded).length > 0 ? (
         <ul>
           {(

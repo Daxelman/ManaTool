@@ -16,8 +16,6 @@ export type ManaBreakdown = {
   recommendedLandCount: number;
   /** How many of the recommended lands should be basics. */
   recommendedBasicCount: number;
-  /** Recommended lands that should be non-basic (duals / fetches / utility). */
-  recommendedNonBasicCount: number;
   /** Recommended basics split by color, proportional to colored pip demand. */
   basicsNeeded: Partial<Record<ManaColor, number>>;
 };
@@ -77,8 +75,8 @@ export function optimizeMana(
   const colorIdentity = getDeckColorIdentity(deck);
   const nonLands = deck.filter((card) => !isLand(card));
 
-  const landCount = countCards(deck, isLand);
-  const nonLandCount = countCards(deck, (card) => !isLand(card));
+  const nonLandCount = totalQuantity(nonLands);
+  const landCount = totalQuantity(deck) - nonLandCount;
   const averageManaValue = getAverageManaValue(nonLands);
   const rampAndDrawCount = countRampAndDraw(nonLands, rampAndDrawNames);
 
@@ -90,9 +88,6 @@ export function optimizeMana(
     recommendedLandCount,
     colorIdentity.length,
   );
-  const recommendedNonBasicCount =
-    recommendedLandCount - recommendedBasicCount;
-
   const basicsNeeded = distributeBasics(
     nonLands,
     colorIdentity,
@@ -107,7 +102,6 @@ export function optimizeMana(
     rampAndDrawCount,
     recommendedLandCount,
     recommendedBasicCount,
-    recommendedNonBasicCount,
     basicsNeeded,
   };
 }
@@ -260,13 +254,8 @@ function isLand(card: DeckCard): boolean {
   return card.data.type_line.includes("Land");
 }
 
-function countCards(
-  deck: DeckCard[],
-  predicate: (card: DeckCard) => boolean,
-): number {
-  return deck
-    .filter(predicate)
-    .reduce((total, card) => total + card.quantity, 0);
+function totalQuantity(cards: DeckCard[]): number {
+  return cards.reduce((total, card) => total + card.quantity, 0);
 }
 
 function clamp(value: number, min: number, max: number): number {
