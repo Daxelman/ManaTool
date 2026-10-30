@@ -1,13 +1,13 @@
 {
   "files": {
-    "main.css": "/ManaTool/static/css/main.f7335fc1.css",
-    "main.js": "/ManaTool/static/js/main.72b4acf0.js",
+    "main.css": "/ManaTool/static/css/main.1da70442.css",
+    "main.js": "/ManaTool/static/js/main.7a373cde.js",
     "index.html": "/ManaTool/index.html",
-    "main.f7335fc1.css.map": "/ManaTool/static/css/main.f7335fc1.css.map",
-    "main.72b4acf0.js.map": "/ManaTool/static/js/main.72b4acf0.js.map"
+    "main.1da70442.css.map": "/ManaTool/static/css/main.1da70442.css.map",
+    "main.7a373cde.js.map": "/ManaTool/static/js/main.7a373cde.js.map"
   },
   "entrypoints": [
-    "static/css/main.f7335fc1.css",
-    "static/js/main.72b4acf0.js"
+    "static/css/main.1da70442.css",
+    "static/js/main.7a373cde.js"
   ]
 }
