@@ -3,8 +3,8 @@ import { lookupCards } from "../../services/cardLookup";
 import { getRampAndDrawNames } from "../../services/tagLookup";
 import type { ScryfallCard } from "../../types/scryfall";
 import { ManaBreakdown, optimizeMana } from "../../services/optimizer";
-import DeckListInput from "../../Components/DeckListInput";
-import ManaBreakdownSection from "../../Components/ManaBreakdownSection";
+import DeckListInput from "../../components/DeckListInput";
+import ManaBreakdownSection from "../../components/ManaBreakdownSection";
 
 type CardEntry = {
   quantity: number;
@@ -58,12 +58,17 @@ const Home = () => {
         parsed.map((c) => c.name),
         setLoadingStatus,
       );
+
+      const qty = new Map(
+        parsed.map((c) => [c.name.toLowerCase(), c.quantity]),
+      );
+
       const foundCards = found.map(({ name, data }) => ({
-        ...(parsed.find(
-          (c) => c.name.toLowerCase() === name.toLocaleLowerCase(),
-        ) ?? { quantity: 1, name }),
+        name,
+        quantity: qty.get(name.toLowerCase()) ?? 1,
         data,
       }));
+
       setResult({
         found: foundCards,
         notFound: notFound.map((name) => ({ quantity: 0, name })),

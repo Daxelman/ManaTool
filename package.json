@@ -13,15 +13,10 @@
     "@types/react-dom": "^18.2.7",
     "flyonui": "^2.4.1",
     "localforage": "^1.10.0",
-    "match-sorter": "^6.3.1",
-    "pako": "^3.0.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-router-dom": "^6.14.2",
     "react-scripts": "5.0.1",
-    "sort-by": "^1.2.0",
-    "typescript": "^5.9.3",
-    "web-vitals": "^2.1.4"
+    "typescript": "^5.9.3"
   },
   "scripts": {
     "start": "concurrently -k -n tailwind,react \"npm:tailwind:watch\" \"npm:react-start\"",

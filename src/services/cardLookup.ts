@@ -1,7 +1,5 @@
 import localforage from "localforage";
-import { ungzip } from "pako";
 import type { ScryfallCard } from "../types/scryfall";
-import { timed } from "./perf";
 
 const store = localforage.createInstance({
   name: "mana-optimizer",
@@ -47,12 +45,10 @@ async function populate(
   onProgress: (status: string) => void,
 ): Promise<CardMap> {
   onProgress("Fetching card database info...");
-  const { jsonl_download_uri } = await timed("cards: bulk-data metadata", async () => {
-    const metaRes = await fetch(
-      "https://api.scryfall.com/bulk-data/oracle-cards",
-    );
-    return metaRes.json();
-  });
+  const metaRes = await fetch(
+    "https://api.scryfall.com/bulk-data/oracle-cards",
+  );
+  const { jsonl_download_uri } = await metaRes.json();
   if (!jsonl_download_uri) {
     throw new Error(
       "Scryfall bulk-data metadata didn't include a jsonl_download_uri — their API may have changed again.",
@@ -62,51 +58,38 @@ async function populate(
   // The bulk file is gzip-compressed JSON Lines (one card object per line),
   // not a single JSON array, and Scryfall doesn't set Content-Encoding, so
   // fetch() won't auto-decompress it — we have to gunzip it ourselves.
-  onProgress("Downloading card database (one-time setup, ~70MB)...");
+  onProgress("Downloading card database (one-time setup, ~25MB)...");
   const dataRes = await fetch(jsonl_download_uri);
-  const cardMap: CardMap = {};
 
-  if (dataRes.body && typeof DecompressionStream !== "undefined") {
-    // Native streaming path: download, gunzip and parse overlap, and we never
-    // hold the whole compressed + decompressed file in memory at once.
-    await timed("cards: stream download + gunzip + parse", async () => {
-      const reader = dataRes
-        .body!.pipeThrough(new DecompressionStream("gzip"))
-        .pipeThrough(new TextDecoderStream())
-        .getReader();
-      let tail = "";
-      for (;;) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const lines = (tail + value).split("\n");
-        tail = lines.pop() ?? "";
-        for (const line of lines) indexLine(cardMap, line);
-      }
-      indexLine(cardMap, tail);
-    });
-  } else {
-    // Fallback for browsers without DecompressionStream.
-    const compressed = await timed(
-      "cards: download",
-      async () => new Uint8Array(await dataRes.arrayBuffer()),
+  // Streaming is the only viable path: the file is ~25MB gzipped but ~210MB
+  // decompressed, so buffering it whole would need roughly half a gigabyte.
+  // Download, gunzip and parse overlap instead, 64KB at a time.
+  if (typeof DecompressionStream === "undefined" || !dataRes.body) {
+    throw new Error(
+      "This browser can't stream-decompress the card database. Needs Chrome 80+, Firefox 113+, or Safari 16.4+.",
     );
-    onProgress("Decompressing card database...");
-    const jsonl = await timed("cards: gunzip", () =>
-      ungzip(compressed, { toText: true }),
-    );
-    onProgress("Indexing cards...");
-    await timed("cards: parse + index", () => {
-      for (const line of jsonl.split("\n")) indexLine(cardMap, line);
-    });
   }
 
-  await timed("cards: IndexedDB write", async () => {
-    await store.setItem(CARD_MAP_KEY, cardMap);
-    await store.setItem(META_KEY, {
-      downloadedAt: Date.now(),
-      schemaVersion: SCHEMA_VERSION,
-    } as CacheMeta);
-  });
+  const cardMap: CardMap = {};
+  const reader = dataRes.body
+    .pipeThrough(new DecompressionStream("gzip"))
+    .pipeThrough(new TextDecoderStream())
+    .getReader();
+  let tail = "";
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    const lines = (tail + value).split("\n");
+    tail = lines.pop() ?? "";
+    for (const line of lines) indexLine(cardMap, line);
+  }
+  indexLine(cardMap, tail);
+
+  await store.setItem(CARD_MAP_KEY, cardMap);
+  await store.setItem(META_KEY, {
+    downloadedAt: Date.now(),
+    schemaVersion: SCHEMA_VERSION,
+  } as CacheMeta);
 
   memoryCardMap = cardMap;
   return cardMap;
@@ -121,34 +104,27 @@ export async function lookupCards(
   names: string[],
   onProgress: (status: string) => void,
 ): Promise<LookupResult> {
-  return timed("cards: lookupCards total", async () => {
-    let cardMap: CardMap;
-    if (await timed("cards: staleness check", isStale)) {
-      cardMap = await timed("cards: populate total", () =>
-        populate(onProgress),
-      );
-    } else if (memoryCardMap) {
-      cardMap = memoryCardMap;
+  let cardMap: CardMap;
+  if (await isStale()) {
+    cardMap = await populate(onProgress);
+  } else if (memoryCardMap) {
+    cardMap = memoryCardMap;
+  } else {
+    cardMap = (await store.getItem<CardMap>(CARD_MAP_KEY)) ?? {};
+    memoryCardMap = cardMap;
+  }
+
+  const found: LookupResult["found"] = [];
+  const notFound: string[] = [];
+
+  for (const name of names) {
+    const card = cardMap[name.toLowerCase()];
+    if (card) {
+      found.push({ name, data: card });
     } else {
-      cardMap = await timed(
-        "cards: IndexedDB read",
-        async () => (await store.getItem<CardMap>(CARD_MAP_KEY)) ?? {},
-      );
-      memoryCardMap = cardMap;
+      notFound.push(name);
     }
+  }
 
-    const found: LookupResult["found"] = [];
-    const notFound: string[] = [];
-
-    for (const name of names) {
-      const card = cardMap[name.toLowerCase()];
-      if (card) {
-        found.push({ name, data: card });
-      } else {
-        notFound.push(name);
-      }
-    }
-
-    return { found, notFound };
-  });
+  return { found, notFound };
 }
