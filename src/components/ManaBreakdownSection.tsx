@@ -15,8 +15,12 @@ const BASIC_LAND_NAMES: Record<string, string> = {
 };
 const ManaBreakdownSection = ({ manaBreakdown }: ManaBreakdownProps) => {
   return (
-    <div className="flex max-h-312.75 max-w-360 flex-col items-center justify-center gap-10">
-      <p className="jus">Deck Breakdown:</p>
+    <div className="flex max-h-312.75 max-w-360 flex-col items-start justify-center gap-4.5">
+      <div className="h-fit w-fit">
+        <p className="text-1xl/7 font-semibold text-[#CFCCD8]">
+          Deck Breakdown
+        </p>
+      </div>
       <div>
         <div className="grid items-start gap-5 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
           <ColorIdentityCard colorIdentity={manaBreakdown.colorIdentity} />

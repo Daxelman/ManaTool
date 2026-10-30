@@ -1,5 +1,10 @@
+@import url("https://googleapis.com");
 @import "tailwindcss";
 @plugin "flyonui";
+
+@theme {
+  --font-roboto: "Roboto", sans-serif;
+}
 
 body {
   margin: 0;
