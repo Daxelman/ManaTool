@@ -1,4 +1,5 @@
 import { ManaBreakdown } from "../services/optimizer";
+import ColorIdentityCard from "./ColorIdentityCard";
 import StatCard from "./StatCard";
 
 type ManaBreakdownProps = {
@@ -15,12 +16,10 @@ const BASIC_LAND_NAMES: Record<string, string> = {
 const ManaBreakdownSection = ({ manaBreakdown }: ManaBreakdownProps) => {
   return (
     <div className="flex max-h-312.75 max-w-360 flex-col items-center justify-center gap-10">
-      <h1>Deck Breakdown:</h1>
+      <p className="jus">Deck Breakdown:</p>
       <div>
-        {/* <h3>
-          Deck Color Identity:<b> {manaBreakdown.colorIdentity}</b>
-        </h3> */}
-        <div className="flex flex-wrap items-start gap-5">
+        <div className="grid items-start gap-5 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+          <ColorIdentityCard colorIdentity={manaBreakdown.colorIdentity} />
           <StatCard label="LAND COUNT" value={manaBreakdown.landCount} />
           <StatCard label="NON-LAND COUNT" value={manaBreakdown.nonLandCount} />
           <StatCard
